@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+:root {
+  --background: hsl(240, 10%, 7%);
+  --midground: hsl(240, 10%, 14%);
+  --foreground: hsl(240, 10%, 21%);
+  --foregroundHover: hsl(240, 10%, 28%);
+  --font-main: Sora, sans-serif;
+  --ctaColor: #7D39AB;
+}
+
+html {
+  background-color: var(--background);
+}
+
+body {
+  color: white;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-main);
+  font-weight: 600;
+}
+
+p {
+  font-family: Outfit, sans-serif;
+}
+
+h1 {
+  font-size: 3rem;
+}
+
+h2 {
+  font-size: 1.5rem;
+}
+
+h3 {
+  font-size: 1.125rem;
+}
