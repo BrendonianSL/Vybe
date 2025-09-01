@@ -26,8 +26,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${sora.variable} ${outfit.variable} antialiased`}
-      >
+        className={`${sora.variable} ${outfit.variable} antialiased flex items-center justify-center`}>
         {children}
       </body>
     </html>
