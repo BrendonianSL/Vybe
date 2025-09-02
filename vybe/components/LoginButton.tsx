@@ -1,6 +1,6 @@
 'use client';
 const requestAccess = () => {
-    window.location.href = `https://accounts.spotify.com/authorize?client_id=${process.env.NEXT_PUBLIC_CLIENTID}&redirect_uri=${process.env.NEXT_PUBLIC_REDIRECT}&response_type=code&show_dialog=true`;
+    window.location.href = `https://accounts.spotify.com/authorize?client_id=${process.env.NEXT_PUBLIC_CLIENTID}&redirect_uri=${process.env.NEXT_PUBLIC_REDIRECT}&response_type=code&show_dialog=true&scope=playlist-modify-public%20playlist-modify-private`;
 }
 export default  function LoginButton() {
     return (

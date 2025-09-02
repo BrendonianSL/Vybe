@@ -6,13 +6,20 @@ import Track from '@/components/Track';
 import { useSearchParams } from 'next/navigation';
 import { NextResponse } from 'next/server';
 
+interface trackObject {
+    name: string,
+    artist: string[],
+    image: string
+}
 export default function Create() {
     const [name, setName] = useState(0); // State to track the index of the playlist name.
     const [tokenData, setTokenData] = useState(''); // State to track the access token data.
     const [searchTerm, setSearchTerm] = useState(''); // State to track the current serach term.
-    const [description, setDescription] = useState(null); // State to track the current description.
-    const [tracks, setTracks] = useState([]); //State to track the current tracks in playlist.
+    const [description, setDescription] = useState(0); // State to track the current description.
+    const [tracks, setTracks] = useState<trackObject[]>([]); //State to track the current tracks in playlist. Review "Typescript generics" for more information.
     const [searchResults, setSearchResults] = useState([]); // State to track the current search results.
+
+    const savedTracks = new Set<string>();
 
     // Variables to hold playlist names and descriptions.
     const playlistNames = ['Vybin', 'Wavez', 'Chill', 'Pulse', 'Hype', 'Bumpin', 'Boomin'];
@@ -26,6 +33,81 @@ export default function Create() {
     // Function to rotate the playlist names.
     const rotateName = (index : number) => {
         setName((index + 1) % playlistNames.length);
+    }
+
+    // Function for adding a song to the track list.
+    const addTrack = (id: string) => {
+        // Check if the song is already within the set.
+        if(savedTracks.has(id)) return;
+
+        // Add the song to the set.
+        savedTracks.add(id);
+
+        console.log('done');
+    }
+
+    const test = async () => {
+        // Firstly, grab the user id.
+        const response = await fetch('https://api.spotify.com/v1/me', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${tokenData}`
+            }
+        });
+
+        // If the response is not ok, show an error to the user.
+        if(!response.ok) {
+            // Parse The Response.
+            const error = await response.json();
+
+            window.alert(`Error: ${error.errror.status}. ${error.error.message}`);
+        }
+
+        let userId = await response.json();
+
+        userId = userId.id;
+
+        // First thing we need to do before adding items to a playlist is to create the playlist in the first place.
+        const playlistResponse = await fetch('/api/spotify/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                id: userId,
+                name: playlistNames[name],
+                description: playlistDescriptions[description],
+                token: tokenData
+            })
+        });
+
+        // If the response is not ok, show an error to the user.
+        if(!playlistResponse.ok) {
+            // Send an error code to the users.
+            console.log('Error ' + playlistResponse.status);
+            return;
+        }
+
+        // If we created the playlist, then we can add items to it.
+        let playlistId = await playlistResponse.json();
+
+        playlistId = playlistId.id;
+
+                // Add tracks to the playlist.
+        const trackResponse = await fetch('/api/spotify/addtracks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                playlistID: playlistId,
+                tracks: [...savedTracks],
+                token: tokenData
+            })
+        });
+
+        if(!trackResponse.ok) {
+            window.Error(`There was an error adding tracks to your playlist. ${trackResponse.status}`);
+        };
+
+        // Tell the user the playlist has successfully been created.
+        window.alert('Playlist successfully created!');
     }
 
     // Use effect to fetch the access token on application start.
@@ -101,17 +183,16 @@ export default function Create() {
                         <p>Playlist Description</p>
                     </div>
                     <div className='flex w-full gap-4'>
-                        <div onClick={() => rotateName(name)} className='flex gap-2 text-[.875rem] items-center rounded-lg px-3 py-2 bg-(--foreground) lg:hover:bg-(--foregroundHover) lg:hover:cursor-pointer'>
+                        <div onClick={() => console.log(savedTracks)} className='flex gap-2 text-[.875rem] items-center rounded-lg px-3 py-2 bg-(--foreground) lg:hover:bg-(--foregroundHover) lg:hover:cursor-pointer'>
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M10 16H5V21M14 8H19V3M4.58301 9.0034C5.14369 7.61566 6.08244 6.41304 7.29255 5.53223C8.50266 4.65141 9.93686 4.12752 11.4298 4.02051C12.9227 3.9135 14.4147 4.2274 15.7381 4.92661C17.0615 5.62582 18.1612 6.68254 18.9141 7.97612M19.4176 14.9971C18.8569 16.3848 17.9181 17.5874 16.708 18.4682C15.4979 19.3491 14.0652 19.8723 12.5723 19.9793C11.0794 20.0863 9.58606 19.7725 8.2627 19.0732C6.93933 18.374 5.83882 17.3175 5.08594 16.0239" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>
                             Change Name
                         </div>
-                        <div className='flex gap-2 text-[.875rem] items-center rounded-lg px-3 py-2 bg-(--foreground) lg:hover:bg-(--foregroundHover) lg:hover:cursor-pointer'>
+                        <div onClick={() => {test()}} className='flex gap-2 text-[.875rem] items-center rounded-lg px-3 py-2 bg-(--foreground) lg:hover:bg-(--foregroundHover) lg:hover:cursor-pointer'>
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M10 16H5V21M14 8H19V3M4.58301 9.0034C5.14369 7.61566 6.08244 6.41304 7.29255 5.53223C8.50266 4.65141 9.93686 4.12752 11.4298 4.02051C12.9227 3.9135 14.4147 4.2274 15.7381 4.92661C17.0615 5.62582 18.1612 6.68254 18.9141 7.97612M19.4176 14.9971C18.8569 16.3848 17.9181 17.5874 16.708 18.4682C15.4979 19.3491 14.0652 19.8723 12.5723 19.9793C11.0794 20.0863 9.58606 19.7725 8.2627 19.0732C6.93933 18.374 5.83882 17.3175 5.08594 16.0239" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                            Change Description
+                            </svg>                            Create
                         </div>
                     </div>
                 </div>
@@ -125,7 +206,7 @@ export default function Create() {
                     </div>
                     { searchTerm ? (
                         <div className='flex-col gap-2 grow overflow-y-auto pr-4'>
-                            {searchResults.map((track : any) => (<Track id={track.id} name={track.name} artist={track.artists.map((artist : any) => artist.name).join(', ')} image={track.album.images[0].url} />))}
+                            {searchResults.map((track : any) => (<Track id={track.uri} name={track.name} artist={track.artists.map((artist : any) => artist.name).join(', ')} image={track.album.images[0].url} onClick={addTrack} />))}
                         </div>
                     ) : (
                         <div className='flex-col gap-2 grow items-center justify-center'>
