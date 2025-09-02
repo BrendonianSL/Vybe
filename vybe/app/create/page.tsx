@@ -46,8 +46,9 @@ export default function Create() {
         console.log('done');
     }
 
-    const test = async () => {
-        // Firstly, grab the user id.
+    // Creates The Playlist.
+    const createPlaylist = async () => {
+        // Grab the user id.
         const response = await fetch('https://api.spotify.com/v1/me', {
             method: 'GET',
             headers: {
@@ -55,19 +56,20 @@ export default function Create() {
             }
         });
 
-        // If the response is not ok, show an error to the user.
-        if(!response.ok) {
-            // Parse The Response.
-            const error = await response.json();
+        // Immediately parses the object.
+        const data = await response.json();
 
-            window.alert(`Error: ${error.errror.status}. ${error.error.message}`);
+        // If the response is not ok, send an error code to the user's browser.
+        if(!response.ok) {
+            window.alert(`Error ${data.error.status}: ${data.error.message}`);
+            return; //Leave the function.
         }
 
+        // Grabs the user id from the response. Change it immediately.
         let userId = await response.json();
-
         userId = userId.id;
 
-        // First thing we need to do before adding items to a playlist is to create the playlist in the first place.
+        // Create the playlist.
         const playlistResponse = await fetch('/api/spotify/create', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json'},
@@ -79,19 +81,17 @@ export default function Create() {
             })
         });
 
-        // If the response is not ok, show an error to the user.
+        // If the response is not ok, send an error code to the user's browser.
         if(!playlistResponse.ok) {
-            // Send an error code to the users.
-            console.log('Error ' + playlistResponse.status);
-            return;
+            window.alert(`Error ${data.error.status}: ${data.error.message}`);
+            return; // Leave the function.
         }
 
-        // If we created the playlist, then we can add items to it.
+        // Grabs the playlist id from the response. Change it immediately.
         let playlistId = await playlistResponse.json();
-
         playlistId = playlistId.id;
 
-                // Add tracks to the playlist.
+        // Add tracks to playlist.
         const trackResponse = await fetch('/api/spotify/addtracks', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json'},
@@ -102,15 +102,17 @@ export default function Create() {
             })
         });
 
+        //If the response is not ok, send an error code to the user's browser.
         if(!trackResponse.ok) {
-            window.Error(`There was an error adding tracks to your playlist. ${trackResponse.status}`);
+            window.alert(`Error ${data.error.status}: ${data.error.message}`);
+            return; // Leave the function.
         };
 
-        // Tell the user the playlist has successfully been created.
+        // Tell the user that the resource has been created.
         window.alert('Playlist successfully created!');
     }
 
-    // Use effect to fetch the access token on application start.
+    // Effect to fetch the access token on mount.
     useEffect(() => {
         async function start() {
             const response = await fetch('/api/spotify/token', {
@@ -142,7 +144,7 @@ export default function Create() {
         start();
     }, []);
 
-    // Handles searching songs on spotify api.
+    // Effect to fetch song information when search term changes.
     useEffect(() => {
         const fetchTracks = async () => {
             // Fetches information from spotify api.
@@ -189,7 +191,7 @@ export default function Create() {
                             </svg>
                             Change Name
                         </div>
-                        <div onClick={() => {test()}} className='flex gap-2 text-[.875rem] items-center rounded-lg px-3 py-2 bg-(--foreground) lg:hover:bg-(--foregroundHover) lg:hover:cursor-pointer'>
+                        <div onClick={() => {createPlaylist()}} className='flex gap-2 text-[.875rem] items-center rounded-lg px-3 py-2 bg-(--foreground) lg:hover:bg-(--foregroundHover) lg:hover:cursor-pointer'>
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M10 16H5V21M14 8H19V3M4.58301 9.0034C5.14369 7.61566 6.08244 6.41304 7.29255 5.53223C8.50266 4.65141 9.93686 4.12752 11.4298 4.02051C12.9227 3.9135 14.4147 4.2274 15.7381 4.92661C17.0615 5.62582 18.1612 6.68254 18.9141 7.97612M19.4176 14.9971C18.8569 16.3848 17.9181 17.5874 16.708 18.4682C15.4979 19.3491 14.0652 19.8723 12.5723 19.9793C11.0794 20.0863 9.58606 19.7725 8.2627 19.0732C6.93933 18.374 5.83882 17.3175 5.08594 16.0239" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>                            Create
