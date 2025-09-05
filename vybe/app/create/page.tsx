@@ -5,6 +5,7 @@ import AddTrack from '@/components/AddTrack';
 import Track from '@/components/Track';
 import { useSearchParams } from 'next/navigation';
 import { NextResponse } from 'next/server';
+import TrackRemove from '@/components/TrackRemove';
 
 // Defines the shape needed for our Set.
 interface TrackInfo {
@@ -18,10 +19,9 @@ export default function Create() {
     const [name, setName] = useState(0); // State to track the index of the playlist name.
     const [tokenData, setTokenData] = useState(''); // State to track the access token data.
     const [searchTerm, setSearchTerm] = useState(''); // State to track the current serach term.
-    const [tracks, setTracks] = useState<TrackInfo[]>([]); // State to track the current tracks.
+    const [tracks, setTracks] = useState<Map<string, TrackInfo>>(new Map()); // State to track the current tracks.
     const [description, setDescription] = useState(0); // State to track the current description.
     const [searchResults, setSearchResults] = useState([]); // State to track the current search results.
-    const savedTracks = new Map<string, TrackInfo>();
     let refreshData : {refresh_token: string, expiration: number};
     
 
@@ -35,24 +35,38 @@ export default function Create() {
     const searchParams = useSearchParams();
 
     // Function to rotate the playlist names.
-    const rotateName = (index : number) => {
-        setName((index + 1) % playlistNames.length);
+    const rotateName = () => {
+        setName((name + 1) % playlistNames.length);
     }
 
-    // Function for adding a song to the track list.
-    const addTrack = ({id, name, artist, image} : TrackInfo) => {
-        // Check if the mapping contains the track already.
-        if(savedTracks.has(id)) return;
-
-        // Add the saved track to the mapping.
-        savedTracks.set(id, { id: id, name : name, artist : artist, image: image });
-
-        // Log to console
-        console.log(savedTracks);
-
-        // Updates the state.
-        setTracks(Array.from(savedTracks.values()));
+    // Function to rotate the playlist descriptions.
+    const rotateDescription = () => {
+        setDescription((description + 1) % playlistDescriptions.length);
     }
+    
+    const addTrack = ({ id, name, artist, image }: TrackInfo) => {
+        setTracks((prev) => {
+            // If the track already exists, just return the same map
+            if (prev.has(id)) return prev;
+
+            // Create a new map (immutable update pattern)
+            const newMap = new Map(prev);
+            newMap.set(id, { id, name, artist, image });
+
+            return newMap;
+        });
+    };
+
+    const removeTrack = (id: string) => {
+        if(!tracks.has(id)) return;
+
+        setTracks((prev) => {
+            const newMap = new Map(prev);
+            newMap.delete(id);
+            return newMap;
+        })
+    }
+
 
     // Creates The Playlist.
     const createPlaylist = async () => {
@@ -67,22 +81,20 @@ export default function Create() {
         // Immediately parses the object.
         const data = await response.json();
 
+        console.log(data);
+
         // If the response is not ok, send an error code to the user's browser.
         if(!response.ok) {
             window.alert(`Error ${data.error.status}: ${data.error.message}`);
             return; //Leave the function.
         }
 
-        // Grabs the user id from the response. Change it immediately.
-        let userId = await response.json();
-        userId = userId.id;
-
         // Create the playlist.
         const playlistResponse = await fetch('/api/spotify/create', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json'},
             body: JSON.stringify({
-                id: userId,
+                id: data.id,
                 name: playlistNames[name],
                 description: playlistDescriptions[description],
                 token: tokenData
@@ -105,19 +117,22 @@ export default function Create() {
             headers: { 'Content-Type': 'application/json'},
             body: JSON.stringify({
                 playlistID: playlistId,
-                tracks: [...savedTracks],
+                tracks: Array.from(tracks.keys()),
                 token: tokenData
             })
         });
 
         //If the response is not ok, send an error code to the user's browser.
         if(!trackResponse.ok) {
-            window.alert(`Error ${data.error.status}: ${data.error.message}`);
+            window.alert(`Error with adding tracks to playlist.`);
             return; // Leave the function.
         };
 
         // Tell the user that the resource has been created.
         window.alert('Playlist successfully created!');
+
+        // Empties out the playlist.
+        setTracks(new Map());
     }
 
     // Function that checks if access token has expired.
@@ -214,36 +229,55 @@ export default function Create() {
         fetchTracks();
     }, [searchTerm]);
 
+    useEffect(() => {
+        console.log(tracks);
+    }, [tracks]);
+
     return (
         <section className='flex flex-col gap-2 h-screen w-full max-w-[82.5rem] py-4'>
             <div className='flex gap-2 h-full'>
-                <div className='bg-(--midground) rounded-lg p-5 h-full w-full max-w-[25rem]'>
+                <div className='hidden lg:block bg-(--midground) rounded-lg p-5 h-full w-full max-w-[25rem]'>
                 <div className='flex flex-col gap-4'>
                     <div className='flex flex-col gap-2'>
                         <h2>{playlistNames[name]}</h2>
-                        <p>Playlist Description</p>
+                        <p>{playlistDescriptions[description]}</p>
                     </div>
-                    <div className='flex w-full gap-4'>
-                        <div onClick={() => console.log(savedTracks)} className='flex gap-2 text-[.875rem] items-center rounded-lg px-3 py-2 bg-(--foreground) lg:hover:bg-(--foregroundHover) lg:hover:cursor-pointer'>
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M10 16H5V21M14 8H19V3M4.58301 9.0034C5.14369 7.61566 6.08244 6.41304 7.29255 5.53223C8.50266 4.65141 9.93686 4.12752 11.4298 4.02051C12.9227 3.9135 14.4147 4.2274 15.7381 4.92661C17.0615 5.62582 18.1612 6.68254 18.9141 7.97612M19.4176 14.9971C18.8569 16.3848 17.9181 17.5874 16.708 18.4682C15.4979 19.3491 14.0652 19.8723 12.5723 19.9793C11.0794 20.0863 9.58606 19.7725 8.2627 19.0732C6.93933 18.374 5.83882 17.3175 5.08594 16.0239" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                            Change Name
+                    <div className='flex flex-col w-full gap-4'>
+                        <div className='flex gap-4 items-center justify-between'>
+                            <div onClick={() => rotateName()} className='flex gap-2 text-[.875rem] items-center rounded-lg px-3 py-2 bg-(--foreground) lg:hover:bg-(--foregroundHover) lg:hover:cursor-pointer w-full'>
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M10 16H5V21M14 8H19V3M4.58301 9.0034C5.14369 7.61566 6.08244 6.41304 7.29255 5.53223C8.50266 4.65141 9.93686 4.12752 11.4298 4.02051C12.9227 3.9135 14.4147 4.2274 15.7381 4.92661C17.0615 5.62582 18.1612 6.68254 18.9141 7.97612M19.4176 14.9971C18.8569 16.3848 17.9181 17.5874 16.708 18.4682C15.4979 19.3491 14.0652 19.8723 12.5723 19.9793C11.0794 20.0863 9.58606 19.7725 8.2627 19.0732C6.93933 18.374 5.83882 17.3175 5.08594 16.0239" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                                Name
+                            </div>
+                            <div onClick={() => rotateDescription()} className='flex gap-2 text-[.875rem] items-center rounded-lg px-3 py-2 bg-(--foreground) lg:hover:bg-(--foregroundHover) lg:hover:cursor-pointer w-full'>
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M10 16H5V21M14 8H19V3M4.58301 9.0034C5.14369 7.61566 6.08244 6.41304 7.29255 5.53223C8.50266 4.65141 9.93686 4.12752 11.4298 4.02051C12.9227 3.9135 14.4147 4.2274 15.7381 4.92661C17.0615 5.62582 18.1612 6.68254 18.9141 7.97612M19.4176 14.9971C18.8569 16.3848 17.9181 17.5874 16.708 18.4682C15.4979 19.3491 14.0652 19.8723 12.5723 19.9793C11.0794 20.0863 9.58606 19.7725 8.2627 19.0732C6.93933 18.374 5.83882 17.3175 5.08594 16.0239" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                                Description
+                            </div>
                         </div>
-                        <div onClick={() => {createPlaylist()}} className='flex gap-2 text-[.875rem] items-center rounded-lg px-3 py-2 bg-(--foreground) lg:hover:bg-(--foregroundHover) lg:hover:cursor-pointer'>
+                        <div onClick={() => {createPlaylist()}} className='flex items-center justify-center gap-2 text-[.875rem] rounded-lg px-3 py-2 bg-(--ctaColor) lg:hover:bg-(--ctaHover) lg:hover:cursor-pointer'>                            
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M10 16H5V21M14 8H19V3M4.58301 9.0034C5.14369 7.61566 6.08244 6.41304 7.29255 5.53223C8.50266 4.65141 9.93686 4.12752 11.4298 4.02051C12.9227 3.9135 14.4147 4.2274 15.7381 4.92661C17.0615 5.62582 18.1612 6.68254 18.9141 7.97612M19.4176 14.9971C18.8569 16.3848 17.9181 17.5874 16.708 18.4682C15.4979 19.3491 14.0652 19.8723 12.5723 19.9793C11.0794 20.0863 9.58606 19.7725 8.2627 19.0732C6.93933 18.374 5.83882 17.3175 5.08594 16.0239" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>                            Create
+                                <path d="M4 20.0001H20M4 20.0001V16.0001L12 8.00012M4 20.0001L8 20.0001L16 12.0001M12 8.00012L14.8686 5.13146L14.8704 5.12976C15.2652 4.73488 15.463 4.53709 15.691 4.46301C15.8919 4.39775 16.1082 4.39775 16.3091 4.46301C16.5369 4.53704 16.7345 4.7346 17.1288 5.12892L18.8686 6.86872C19.2646 7.26474 19.4627 7.46284 19.5369 7.69117C19.6022 7.89201 19.6021 8.10835 19.5369 8.3092C19.4628 8.53736 19.265 8.73516 18.8695 9.13061L18.8686 9.13146L16 12.0001M12 8.00012L16 12.0001" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Create
                         </div>
                     </div>
                 </div>
-                <div className='py-8'>
-                    { tracks.map((track : any) => (<Track id={track.id} name={track.name} artist={track.artist} image={track.image} />)) }
+                <div className='flex flex-col gap-4 py-8'>
+                    { tracks.values().map((track : TrackInfo) => (<TrackRemove id={track.id} name={track.name} artist={track.artist} image={track.image} onClick={removeTrack} />)) }
                 </div>
                 </div>
                 <div className='flex flex-col gap-4 bg-(--midground) grow rounded-lg p-5 max-h-full'>
                     <div className='flex flex-col gap-2'>
-                        <h2>Song Search</h2>
+                        <div className='flex justify-between items-center'>
+                            <h2>Song Search</h2>
+                            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" clip-rule="evenodd" d="M2.25 6C2.25 5.80109 2.32902 5.61032 2.46967 5.46967C2.61032 5.32902 2.80109 5.25 3 5.25H21C21.1989 5.25 21.3897 5.32902 21.5303 5.46967C21.671 5.61032 21.75 5.80109 21.75 6C21.75 6.19891 21.671 6.38968 21.5303 6.53033C21.3897 6.67098 21.1989 6.75 21 6.75H3C2.80109 6.75 2.61032 6.67098 2.46967 6.53033C2.32902 6.38968 2.25 6.19891 2.25 6ZM2.25 10C2.25 9.80109 2.32902 9.61032 2.46967 9.46967C2.61032 9.32902 2.80109 9.25 3 9.25H21C21.1989 9.25 21.3897 9.32902 21.5303 9.46967C21.671 9.61032 21.75 9.80109 21.75 10C21.75 10.1989 21.671 10.3897 21.5303 10.5303C21.3897 10.671 21.1989 10.75 21 10.75H3C2.80109 10.75 2.61032 10.671 2.46967 10.5303C2.32902 10.3897 2.25 10.1989 2.25 10ZM2.25 14C2.25 13.8011 2.32902 13.6103 2.46967 13.4697C2.61032 13.329 2.80109 13.25 3 13.25H11C11.1989 13.25 11.3897 13.329 11.5303 13.4697C11.671 13.6103 11.75 13.8011 11.75 14C11.75 14.1989 11.671 14.3897 11.5303 14.5303C11.3897 14.671 11.1989 14.75 11 14.75H3C2.80109 14.75 2.61032 14.671 2.46967 14.5303C2.32902 14.3897 2.25 14.1989 2.25 14ZM2.25 18C2.25 17.8011 2.32902 17.6103 2.46967 17.4697C2.61032 17.329 2.80109 17.25 3 17.25H11C11.1989 17.25 11.3897 17.329 11.5303 17.4697C11.671 17.6103 11.75 17.8011 11.75 18C11.75 18.1989 11.671 18.3897 11.5303 18.5303C11.3897 18.671 11.1989 18.75 11 18.75H3C2.80109 18.75 2.61032 18.671 2.46967 18.5303C2.32902 18.3897 2.25 18.1989 2.25 18Z" fill="#fff"/>
+                                <path d="M18.875 14.118C20.529 15.073 21.355 15.551 21.477 16.239C21.5074 16.4113 21.5074 16.5876 21.477 16.76C21.356 17.45 20.529 17.927 18.875 18.882C17.221 19.837 16.395 20.314 15.737 20.075C15.5727 20.0153 15.42 19.9273 15.286 19.815C14.75 19.365 14.75 18.41 14.75 16.5C14.75 14.59 14.75 13.636 15.286 13.186C15.42 13.073 15.573 12.986 15.737 12.926C16.394 12.686 17.221 13.164 18.875 14.118Z" fill="#fff"/>
+                            </svg>
+                        </div>
                         <input onChange={(e) => {setSearchTerm(e.target.value)}} className={'bg-(--foreground) rounded-lg w-full p-4 text-white'} type='text' placeholder='What songs do you like?' />
                     </div>
                     { searchTerm ? (

@@ -7,6 +7,12 @@
   --foregroundHover: hsl(240, 10%, 28%);
   --font-main: Sora, sans-serif;
   --ctaColor: #7D39AB;
+  --ctaHover: #8e42c0;
+}
+
+@theme inline {
+  --font-main: var(--font-sora);
+  --font-sub: var(--font-sora);
 }
 
 html {
@@ -29,6 +35,7 @@ h1, h2, h3 {
 
 p {
   font-family: Outfit, sans-serif;
+  font-weight: 400;
 }
 
 h1 {
