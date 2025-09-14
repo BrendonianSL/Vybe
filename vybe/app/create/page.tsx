@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Track from '@/components/Track';
-import { useSearchParams } from 'next/navigation';
 import TrackRemove from '@/components/TrackRemove';
 import { Suspense } from 'react';
 
@@ -45,7 +44,7 @@ export default function Create() {
     const playlistDescriptions = ['Chill vibes for any mood', 'Pump up your energy', 'Late night study jams', 'Raod trip sing-alongs', 'Fell-good morning tunes', 'Rainy day relaxation mix', 'Party hits nonstop'];
 
     // Grabs the search parameters from the url.
-    const searchParams = useSearchParams();
+    const searchParams = new URLSearchParams(window.location.search);
 
     // Function to rotate the playlist names.
     const rotateName = () => {
