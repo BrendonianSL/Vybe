@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import AddTrack from '@/components/AddTrack';
 import Track from '@/components/Track';
 import { useSearchParams } from 'next/navigation';
 import { NextResponse } from 'next/server';
@@ -23,7 +22,6 @@ export default function Create() {
     const [tracks, setTracks] = useState<Map<string, TrackInfo>>(new Map()); // State to track the current tracks.
     const [description, setDescription] = useState(0); // State to track the current description.
     const [searchResults, setSearchResults] = useState([]); // State to track the current search results.
-    let refreshData : {refresh_token: string, expiration: number};
     
 
     // Variables to hold playlist names and descriptions.
@@ -67,7 +65,6 @@ export default function Create() {
             return newMap;
         })
     }
-
 
     // Creates The Playlist.
     const createPlaylist = async () => {
@@ -142,7 +139,7 @@ export default function Create() {
         setTracks(new Map());
     }
 
-    // Function that checks if access token has expired.
+    /* WILL WORK ON LATER.
     const checkExpiration = async () => {
         // Check if the current time is greater than the time it is going to expire.
         if(Date.now() > refreshData.expiration) {
@@ -165,11 +162,16 @@ export default function Create() {
             // Parse the response.
             const data = await response.json();
         }
-    }
+    }*/
 
     // Effect to fetch the access token on mount.
     useEffect(() => {
         async function start() {
+            // If there is no code, redirect to the login page.
+            if(!searchParams.get('code')) {
+                window.location.href = '/';
+            }
+
             const response = await fetch('/api/spotify/token', {
                 method: 'POST',
                 headers: {
@@ -182,7 +184,8 @@ export default function Create() {
 
             // If the response fails, send an error code to the user.
             if(!response.ok) {
-                console.error('ERROR');
+                // Code is invalid or expired. Redirect the user to the login page.
+                window.location.href = '/';
             }
 
             // Parses data from json.
@@ -190,12 +193,6 @@ export default function Create() {
 
             // Resets the value to the access token.
             data = data.data.access_token;
-
-            // Store refresh token and expiration time in memory.
-            refreshData = {
-                refresh_token: data.refresh_token,
-                expiration: Date.now() + data.expires_in * 1000
-            }
 
             // Changes value of the state.
             setTokenData(data);
@@ -236,21 +233,16 @@ export default function Create() {
         fetchTracks();
     }, [searchTerm]);
 
-    // Use effect to check if there is a code query string attached.
     useEffect(() => {
-        const code = searchParams.get('code');
-    })
+        const handleResize = () => {
+            if (window.innerWidth > 1024) {
+            setOpen(false);
+            }
+        };
 
-    useEffect(() => {
-  const handleResize = () => {
-    if (window.innerWidth > 1024) {
-      setOpen(false);
-    }
-  };
-
-  window.addEventListener("resize", handleResize);
-  return () => window.removeEventListener("resize", handleResize);
-}, [setOpen]);
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, [setOpen]);
 
 
     return (
@@ -286,7 +278,7 @@ export default function Create() {
                     </div>
                 </div>
                 <div className='flex flex-col gap-4 py-8'>
-                    { tracks.values().map((track : TrackInfo) => (<TrackRemove id={track.id} name={track.name} artist={track.artist} image={track.image} onClick={removeTrack} />)) }
+                    { tracks.values().map((track : TrackInfo) => (<TrackRemove key={track.id} id={track.id} name={track.name} artist={track.artist} image={track.image} onClick={removeTrack} />)) }
                 </div>
                 </div>
                 <div onClick={() => setOpen(false)} className={`${open ? 'block' : 'hidden'} z-5 absolute w-full h-full bg-black opacity-50`}></div>
