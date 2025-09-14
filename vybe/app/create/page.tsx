@@ -218,34 +218,38 @@ export default function Create() {
 
     // Effect to fetch song information when search term changes.
     useEffect(() => {
-        const fetchTracks = async () => {
-            // Fetches information from spotify api.
-            const response = await fetch(`https://api.spotify.com/v1/search?q=${searchTerm}&type=track`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${tokenData}`
-                }
-            });
-
-            // If the response is not ok, send an error code to the user.
-            if(!response.ok) {
-                return NextResponse.json({ error: 'Could not fetch tracks', status: 500 });
-            }
-
-            // Parses data from json.
-            let data = await response.json();
-
-            // Reset the value to the items array.
-            data = data.tracks.items;
-
-            console.log(data);
-
-            // Updates tracks state.
-            setSearchResults(data);
+  const fetchTracks = async () => {
+    try {
+      const response = await fetch(
+        `https://api.spotify.com/v1/search?q=${searchTerm}&type=track`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${tokenData}`,
+          },
         }
+      );
 
-        fetchTracks();
-    }, [searchTerm]);
+      if (!response.ok) {
+        // Handle error on the client
+        console.error('Could not fetch tracks');
+        setSearchResults([]); // optionally clear previous results
+        return;
+      }
+
+      const data = await response.json();
+      setSearchResults(data.tracks.items); // update state
+    } catch (err) {
+      console.error('Fetch error:', err);
+      setSearchResults([]);
+    }
+  };
+
+  if (searchTerm && tokenData) {
+    fetchTracks();
+  }
+}, [searchTerm, tokenData]);
+
 
     useEffect(() => {
         const handleResize = () => {
