@@ -1,13 +1,13 @@
 @import "tailwindcss";
 
 :root {
-  --background: hsl(240, 10%, 7%);
-  --midground: hsl(240, 10%, 14%);
-  --foreground: hsl(240, 10%, 21%);
+  --background: hsl(0, 0%, 10%);
+  --midground: hsl(0, 0%, 14%);
+  --foreground: hsl(0, 0%, 18%);
   --foregroundHover: hsl(240, 10%, 28%);
   --font-main: Sora, sans-serif;
-  --ctaColor: #7D39AB;
-  --ctaHover: #8e42c0;
+  --ctaColor: #006239;
+  --ctaHover: #128453;
 }
 
 @theme inline {
