@@ -7,9 +7,9 @@ export default function Track({
 }: {
   id: string;
   name: string;
-  artist: string[];
+  artist: string;
   image: string;
-  onClick?: ({id, name, artist, image} : {id: string, name: string, artist: string[], image: string}) => void;
+  onClick?: ({id, name, artist, image} : {id: string, name: string, artist: string, image: string}) => void;
 }) {
     return (
         <div onClick={() => onClick && onClick({id, name, artist, image})} key={id} className='max-h-[60px] h-full flex items-center gap-2 px-4 py-2 rounded-lg lg:hover:cursor-pointer lg:hover:bg-(--foreground)'>

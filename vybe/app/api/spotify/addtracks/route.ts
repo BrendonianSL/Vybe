@@ -30,10 +30,14 @@ export async function POST(req: NextRequest) {
 
     // Success (Spotify responds with 201).
     return NextResponse.json({ message: 'Tracks added', status: 201 }, { status: 201 });
-  } catch (err: any) {
-    return NextResponse.json(
-      { error: err.message || 'Internal Server Error' },
-      { status: 500 }
-    );
+  } catch (err: unknown) {
+  let message = "Internal Server Error";
+
+  if (err instanceof Error) {
+    message = err.message;
   }
+
+  return NextResponse.json({ error: message }, { status: 500 });
+}
+
 }

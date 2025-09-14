@@ -28,7 +28,14 @@ export async function POST(req: Request) {
     const data = await response.json();
 
     return NextResponse.json({ id: data.id }, { status: 200 });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+  let message = "Internal Server Error";
+
+  if (err instanceof Error) {
+    message = err.message;
   }
+
+  return NextResponse.json({ error: message }, { status: 500 });
+}
+
 }

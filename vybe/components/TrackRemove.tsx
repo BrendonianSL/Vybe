@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react';
 
-export default function Track({id, name, artist, image, onClick }: { id: string; name: string; artist: string[]; image: string; onClick?: (id: string) => void }) {
+export default function Track({id, name, artist, image, onClick }: { id: string; name: string; artist: string; image: string; onClick?: (id: string) => void }) {
     const [hover, setHover] = useState(false);
     return (
         <div onPointerOver={() => setHover(true)} onPointerOut={() => setHover(false)} onClick={() => onClick && onClick(id)} key={id} className='relative overflow-hidden max-h-[60px] h-full flex items-center gap-2 px-4 py-2 rounded-lg lg:hover:cursor-pointer lg:hover:bg-(--foreground)'>

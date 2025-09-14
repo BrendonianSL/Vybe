@@ -11,7 +11,21 @@ interface TrackInfo {
     id: string,
     name: string,
     image: string,
-    artist: string[]
+    artist: string
+}
+
+interface Artist {
+    name: string
+}
+
+interface SearchResults {
+    uri: string,
+    name: string,
+    id: string,
+    album: {
+        images: { url: string }[];
+    };
+    artists: Artist[]
 }
 
 export default function Create() {
@@ -200,7 +214,7 @@ export default function Create() {
 
         // Calls the above function.
         start();
-    }, []);
+    }, [searchParams, tokenData]);
 
     // Effect to fetch song information when search term changes.
     useEffect(() => {
@@ -295,7 +309,7 @@ export default function Create() {
                     </div>
                     { searchTerm ? (
                         <div className='flex-col gap-2 grow overflow-y-auto pr-4'>
-                            {searchResults.map((track : any) => (<Track id={track.uri} name={track.name} artist={track.artists.map((artist : any) => artist.name).join(', ')} image={track.album.images[0].url} onClick={addTrack} />))}
+                            {searchResults.map((track : SearchResults) => (<Track key={track.uri} id={track.uri} name={track.name} artist={track.artists.map((artist : Artist) => artist.name).join(', ')} image={track.album.images[0].url} onClick={addTrack} />))}
                         </div>
                     ) : (
                         <div className='flex flex-col gap-2 grow items-center justify-center'>
