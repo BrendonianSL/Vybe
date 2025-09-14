@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import Track from '@/components/Track';
 import { useSearchParams } from 'next/navigation';
-import { NextResponse } from 'next/server';
 import TrackRemove from '@/components/TrackRemove';
+import { Suspense } from 'react';
 
 // Defines the shape needed for our Set.
 interface TrackInfo {
@@ -264,7 +264,8 @@ export default function Create() {
 
 
     return (
-        <section className='relative flex flex-col gap-2 h-screen w-full max-w-[82.5rem] p-4 rounded-lg overflow-hidden'>
+        <Suspense fallback={<div>Loading...</div>}>
+                    <section className='relative flex flex-col gap-2 h-screen w-full max-w-[82.5rem] p-4 rounded-lg overflow-hidden'>
             <div className='relative flex gap-2 h-full'>
                 <div className={`z-10 absolute lg:relative lg:block bg-(--midground) rounded-lg lg:p-5 h-full ${open ? 'w-full p-5' : 'w-0 p-0'} overflow-hidden lg:w-full max-w-[25rem]`}>
                 <div className='flex flex-col gap-4'>
@@ -327,5 +328,6 @@ export default function Create() {
                 </div>
             </div>
         </section>
+        </Suspense>
     )
 }
